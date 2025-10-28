@@ -29,8 +29,20 @@ export default function CompassScreen({ navigation }) {
 
     const askForPermission = async () => {
       // TODO a) Ask for location permission
+      try{
+        const {status} = await Location.requestForegroundPermissionsAsync()
+        if (!status) {
+          setSnack("Permission Denied")
+        }
+      } catch(e) {
+        console.log(e)
+      }
 
       // TODO b) Get One-time position and save the coordinates
+      const pos = await Location.getCurrentPositionAsync({})
+      if (mounted) {
+        setCoords(pos.coords)
+      }
 
       //* (GIVEN): Heading watcher (0..360 degrees)
       headingSub = await Location.watchHeadingAsync(({ trueHeading }) => {
@@ -40,7 +52,9 @@ export default function CompassScreen({ navigation }) {
 
       // TODO c) Load saved pins
       const saved = await loadPins();
-      if (mounted) setPins(saved);
+      if (mounted && Array.isArray(saved)){
+          setPins(saved)
+      }
     };
 
     askForPermission();
@@ -97,24 +111,45 @@ export default function CompassScreen({ navigation }) {
       return;
     }
     // TODO(2): push new pin {id, lat, lon, heading, ts} to state and savePins(next)
-    setSnack("TODO: save pin");
+    const newPin = {
+      id: Date.now().toString(),
+      lat: coords.latitude,
+      lon: coords.longitude,
+      heading: heading,
+      ts: nowISO()}
+      // setSnack(`TODO: ${newPin} `);
+      const next = [newPin, ...pins]
+      setPins(next)
+      await savePins(next)
+      setSnack('Pin Saved')
+      // console.log(pins)
   };
 
-  const copyCoords = async () => {
+    const copyCoords = async () => {
     if (!coords) {
-      setSnack("TODO: copy coords");
+      setSnack("No GPS fix yet");
       return;
     }
-    // TODO(3): Clipboard.setStringAsync("lat, lon") then snackbar
+
+    const text = `${fmt(coords.latitude)}, ${fmt(coords.longitude)}`
+    await Clipboard.setStringAsync(text)
+    setSnack("Copied")
   };
+
 
   const shareCoords = async () => {
-    if (!coords) {
-      setSnack("TODO: share");
-      return;
-    }
-    // TODO(4): Share.share with message including coords + heading + cardinal
+  if (!coords) {
+    setSnack("No GPS fix yet");
+    return;
+  }
+
+    const message = `Current Location:
+    Lat: ${fmt(coords.latitude)}
+    Lon: ${fmt(coords.longitude)}`;
+
+    await Share.share({ message });
   };
+
 
   // Make DARK end point opposite heading: add 180°
   const { start, end } = pointsForHeading(((heading ?? 0) + 180) % 360);

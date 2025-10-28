@@ -4,7 +4,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import CompassScreen from "../screens/CompassScreen";
 import PinsScreen from "../screens/PinsScreen";
 
-const Stack = createStackNavigator();
+const Stack = createStackNavigator()
 
 export default function RootNavigator() {
   return (
